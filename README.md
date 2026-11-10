@@ -1,5 +1,10 @@
 # Resilient Task Engine
 
+[![CI](https://github.com/Rajesh-444/resilient-task-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/Rajesh-444/resilient-task-engine/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
+![Reliability](https://img.shields.io/badge/Reliability-0F766E?style=flat-square)
+
 A durable background-job engine that demonstrates reliability patterns commonly hidden inside queue libraries: atomic claims, expiring leases, idempotent enqueueing, exponential retry backoff, and dead-letter handling.
 
 It uses only Python and SQLite, making every state transition easy to run, test, and review.
@@ -15,20 +20,18 @@ It uses only Python and SQLite, making every state transition easy to run, test,
 
 ## State machine
 
-```text
-                   success
-queued --> running ---------> completed
-             |
-             | failure + attempts remain
-             v
-            retry ---------> running
-             |
-             | max attempts reached
-             v
-        dead_letter
+```mermaid
+stateDiagram-v2
+    [*] --> queued
+    queued --> running: atomic claim
+    running --> completed: success
+    running --> retry: failure + attempts remain
+    retry --> running: backoff elapsed
+    running --> dead_letter: max attempts reached
+    running --> running: expired lease reclaimed
+```
 
 An expired running lease can be reclaimed by another worker.
-```
 
 ## Run the demo
 
