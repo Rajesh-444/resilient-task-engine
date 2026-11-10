@@ -1,0 +1,6 @@
+[project]
+name = "resilient-task-engine"
+version = "0.1.0"
+description = "Durable background jobs with leases, retries, and idempotency"
+requires-python = ">=3.10"
+
