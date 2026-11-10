@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from .guardrails import JobSafetyPolicy
+
 
 Clock = Callable[[], float]
 
@@ -29,10 +31,16 @@ class Job:
 class SQLiteQueue:
     """A small at-least-once queue with explicit state transitions."""
 
-    def __init__(self, path: str | Path, clock: Clock = time.time):
+    def __init__(
+        self,
+        path: str | Path,
+        clock: Clock = time.time,
+        safety_policy: JobSafetyPolicy | None = None,
+    ):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.clock = clock
+        self.safety_policy = safety_policy or JobSafetyPolicy()
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
@@ -103,6 +111,7 @@ class SQLiteQueue:
             raise ValueError("max_attempts must be positive")
         if delay_seconds < 0:
             raise ValueError("delay_seconds cannot be negative")
+        self.safety_policy.validate(name, payload)
         now = self.clock()
         with self._connect() as connection:
             try:

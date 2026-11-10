@@ -56,6 +56,19 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 
 The execution model is intentionally **at least once**. Handlers should therefore make their own external side effects idempotent.
 
+## AI safety and execution guardrails
+
+| Control | Behavior |
+| --- | --- |
+| Handler allowlist | Workers execute only explicitly registered in-process handlers; unknown jobs fail safely |
+| Payload inspection | Rejects password, token, API-key, secret, and private-key fields at enqueue time |
+| No arbitrary execution | Blocks command, shell, script, code, eval, and exec payload keys |
+| Resource bounds | Limits payloads to 16 KiB, nesting to six levels, and job names to a constrained format |
+| Ownership checks | Only the worker holding the active lease can complete or fail a job |
+| Human authority | AI-generated tasks must map to reviewed handlers; free-form model output is never executed directly |
+
+These controls reduce common agentic-AI risks such as tool misuse, secret propagation, and unbounded action payloads. Production handlers must still validate domain-specific authorization and make external side effects idempotent.
+
 ## Production roadmap
 
 - PostgreSQL `FOR UPDATE SKIP LOCKED` backend

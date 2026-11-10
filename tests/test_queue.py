@@ -68,6 +68,22 @@ class QueueTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "not owned"):
             self.queue.complete(job.id, "worker-b")
 
+    def test_blocks_sensitive_payload_keys(self):
+        with self.assertRaisesRegex(ValueError, "sensitive payload key"):
+            self.queue.enqueue("sync", {"credentials": {"api_key": "do-not-store"}})
+
+    def test_blocks_arbitrary_execution_payloads(self):
+        with self.assertRaisesRegex(ValueError, "arbitrary execution"):
+            self.queue.enqueue("sync", {"shell_command": "rm -rf something"})
+
+    def test_bounds_payload_size(self):
+        with self.assertRaisesRegex(ValueError, "payload exceeds"):
+            self.queue.enqueue("sync", {"data": "x" * 20_000})
+
+    def test_validates_job_name(self):
+        with self.assertRaisesRegex(ValueError, "job name must match"):
+            self.queue.enqueue("Run Arbitrary Code", {})
+
 
 class WorkerTests(unittest.TestCase):
     def test_worker_records_handler_failure(self):
